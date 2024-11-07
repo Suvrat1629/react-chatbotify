@@ -2,7 +2,11 @@ import { useEffect, useRef } from "react";
 
 import ChatHistoryButton from "../../components/ChatHistoryButton/ChatHistoryButton";
 import { preProcessBlock } from "../../services/BlockService/BlockService";
-import { saveChatHistory, setHistoryStorageValues } from "../../services/ChatHistoryService";
+import {
+	clearHistoryMessages,
+	getHistoryMessages,
+	setHistoryStorageValues
+} from "../../services/ChatHistoryService";
 import { createMessage } from "../../utils/messageBuilder";
 import { useIsDesktopInternal } from "./useIsDesktopInternal";
 import { useChatWindowInternal } from "./useChatWindowInternal";
@@ -37,7 +41,6 @@ export const useBotEffectsInternal = () => {
 		injectMessage,
 		removeMessage,
 		streamMessage,
-		messages,
 		replaceMessages,
 	} = useMessagesInternal();
 
@@ -124,11 +127,11 @@ export const useBotEffectsInternal = () => {
 	// renders chat history button if enabled and triggers update if chat history configurations change
 	useEffect(() => {
 		if (settings.chatHistory?.disabled) {
-			localStorage.removeItem(settings.chatHistory?.storageKey as string);
+			clearHistoryMessages();
 		} else {
 			setHistoryStorageValues(settings);
-			const chatHistory = localStorage.getItem(settings.chatHistory?.storageKey as string);
-			if (chatHistory != null) {
+			const historyMessages = getHistoryMessages();
+			if (historyMessages.length > 0) {
 				// note: must always render this button even if autoload (chat history logic relies on system message)
 				const messageContent = createMessage(<ChatHistoryButton/>, "system");
 				replaceMessages([messageContent]);
@@ -253,7 +256,6 @@ export const useBotEffectsInternal = () => {
 			// auto cleanup streaming and save messages on path change (not ideal)
 			// todo: remove this in v3, users should call `params.endStreamMessage()`
 			streamMessageMap.current.clear();
-			saveChatHistory(messages);
 		}
 		callNewBlock(currPath, block, params);
 	}, [paths]);

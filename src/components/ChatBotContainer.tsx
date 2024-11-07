@@ -1,4 +1,4 @@
-import { Dispatch, MouseEvent, SetStateAction, useMemo } from "react";
+import { MouseEvent, useMemo } from "react";
 
 import ChatBotHeader from "./ChatBotHeader/ChatBotHeader";
 import ChatBotBody from "./ChatBotBody/ChatBotBody";
@@ -6,6 +6,7 @@ import ChatBotInput from "./ChatBotInput/ChatBotInput";
 import ChatBotFooter from "./ChatBotFooter/ChatBotFooter";
 import ChatBotButton from "./ChatBotButton/ChatBotButton";
 import ChatBotTooltip from "./ChatBotTooltip/ChatBotTooltip";
+import ToastContainer from "./ChatBotToast/ToastContainer/ToastContainer";
 import { useButtonInternal } from "../hooks/internal/useButtonsInternal";
 import { useChatWindowInternal } from "../hooks/internal/useChatWindowInternal";
 import { useBotEffectsInternal } from "../hooks/internal/useBotEffectsInternal";
@@ -16,7 +17,6 @@ import { useBotStatesContext } from "../context/BotStatesContext";
 import { useSettingsContext } from "../context/SettingsContext";
 import { useStylesContext } from "../context/StylesContext";
 import { Plugin } from "../types/Plugin";
-import { Theme } from "../types/Theme";
 
 import "./ChatBotContainer.css";
 
@@ -27,10 +27,8 @@ import "./ChatBotContainer.css";
  */
 const ChatBotContainer = ({
 	plugins,
-	setFinalThemes
 }: {
 	plugins?: Array<Plugin>;
-	setFinalThemes: Dispatch<SetStateAction<Theme | Array<Theme>>>;
 }) => {
 	// handles platform
 	const isDesktop = useIsDesktopInternal();
@@ -62,7 +60,7 @@ const ChatBotContainer = ({
 	useBotEffectsInternal();
 
 	// loads plugins
-	usePluginsInternal(plugins, setFinalThemes);
+	usePluginsInternal(plugins);
 
 	/**
 	 * Retrieves class name for window state.
@@ -150,6 +148,7 @@ const ChatBotContainer = ({
 					<div style={getChatWindowStyle()} className="rcb-chat-window">
 						{settings.general?.showHeader && <ChatBotHeader buttons={headerButtons}/>}
 						<ChatBotBody setChatScrollHeight={setChatScrollHeight}/>
+						<ToastContainer/>
 						{settings.general?.showInputRow && <ChatBotInput buttons={chatInputButtons}/>}
 						{settings.general?.showFooter && <ChatBotFooter buttons={footerButtons}/>}
 					</div>

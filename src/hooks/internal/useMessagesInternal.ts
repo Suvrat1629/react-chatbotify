@@ -53,13 +53,15 @@ export const useMessagesInternal = () => {
 		// stop bot typing when simulating stream
 		setIsBotTyping(false);
 
-		// set an initial empty message to be used for streaming
-		setMessages(prevMessages => {
-			const updatedMessages = [...prevMessages, message];
-			handlePostMessagesUpdate(updatedMessages);
-			return updatedMessages;
-		});
-		streamMessageMap.current.set("bot", message.id);
+		if (!streamMessageMap.current.has(message.sender)) {
+			// set an initial empty message to be used for streaming
+			setMessages(prevMessages => {
+				const updatedMessages = [...prevMessages, createMessage("", message.sender)];
+				handlePostMessagesUpdate(updatedMessages);
+				return updatedMessages;
+			});
+			streamMessageMap.current.set(message.sender, message.id);
+		}
 
 		// initialize default message to empty with stream index position 0
 		let streamMessage = message.content as string | string[];
@@ -100,7 +102,7 @@ export const useMessagesInternal = () => {
 		});
 
 		await simStreamDoneTask;
-		streamMessageMap.current.delete("bot");
+		streamMessageMap.current.delete(message.sender);
 		saveChatHistory(messages);
 	}, [messages, streamMessageMap]);
 
@@ -117,7 +119,7 @@ export const useMessagesInternal = () => {
 
 		// handles pre-message inject event
 		if (settings.event?.rcbPreInjectMessage) {
-			const event = callRcbEvent(RcbEvent.PRE_INJECT_MESSAGE, {message});
+			const event = await callRcbEvent(RcbEvent.PRE_INJECT_MESSAGE, {message});
 			if (event.defaultPrevented) {
 				return null;
 			}
@@ -140,7 +142,7 @@ export const useMessagesInternal = () => {
 		// handles post-message inject event
 		setUnreadCount(prev => prev + 1);
 		if (settings.event?.rcbPostInjectMessage) {
-			callRcbEvent(RcbEvent.POST_INJECT_MESSAGE, {message});
+			await callRcbEvent(RcbEvent.POST_INJECT_MESSAGE, {message});
 		}
 
 		if (isBotStream) {
@@ -173,7 +175,7 @@ export const useMessagesInternal = () => {
 	
 		// handles remove message event
 		if (settings.event?.rcbRemoveMessage) {
-			const event = callRcbEvent(RcbEvent.REMOVE_MESSAGE, {message});
+			const event = await callRcbEvent(RcbEvent.REMOVE_MESSAGE, {message});
 			if (event.defaultPrevented) {
 				return null;
 			}
@@ -201,7 +203,7 @@ export const useMessagesInternal = () => {
 			const message = createMessage(content, sender);
 			// handles start stream message event
 			if (settings.event?.rcbStartStreamMessage) {
-				const event = callRcbEvent(RcbEvent.START_STREAM_MESSAGE, {message});
+				const event = await callRcbEvent(RcbEvent.START_STREAM_MESSAGE, {message});
 				if (event.defaultPrevented) {
 					return null;
 				}
@@ -221,7 +223,7 @@ export const useMessagesInternal = () => {
 		const message = {...createMessage(content, sender), id: streamMessageMap.current.get(sender) as string};
 		// handles chunk stream message event
 		if (settings.event?.rcbChunkStreamMessage) {
-			const event = callRcbEvent(
+			const event = await callRcbEvent(
 				RcbEvent.CHUNK_STREAM_MESSAGE,
 				{...message, id: streamMessageMap.current.get(sender)}
 			);
@@ -270,7 +272,7 @@ export const useMessagesInternal = () => {
 
 		// handles stop stream message event
 		if (settings.event?.rcbStopStreamMessage) {
-			const event = callRcbEvent(RcbEvent.STOP_STREAM_MESSAGE, {messageToEndStreamFor});
+			const event = await callRcbEvent(RcbEvent.STOP_STREAM_MESSAGE, {messageToEndStreamFor});
 			if (event.defaultPrevented) {
 				return false;
 			}
@@ -281,14 +283,6 @@ export const useMessagesInternal = () => {
 		saveChatHistory(messages);
 		return true;
 	}, [callRcbEvent, messages, settings.event?.rcbStopStreamMessage, streamMessageMap])
-
-	/**
-	 * Replaces (overwrites entirely) the current messages with the new messages.
-	 */
-	const replaceMessages = (newMessages: Array<Message>) => {
-		handlePostMessagesUpdate(newMessages);
-		setMessages(newMessages);
-	}
 
 	/**
 	 * Handles post messages updates such as saving chat history, scrolling to bottom
@@ -333,6 +327,14 @@ export const useMessagesInternal = () => {
 			}, 1)
 		}
 	}
+
+	/**
+	 * Replaces (overwrites entirely) the current messages with the new messages.
+	 */
+	const replaceMessages = useCallback((newMessages: Array<Message>) => {
+		handlePostMessagesUpdate(newMessages);
+		setMessages(newMessages);
+	}, [handlePostMessagesUpdate])
 
 	return {
 		endStreamMessage,

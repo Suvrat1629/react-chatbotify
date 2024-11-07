@@ -32,10 +32,10 @@ export const useChatWindowInternal = () => {
 	/**
 	 * Toggles chat window.
 	 */
-	const toggleChatWindow = useCallback(() => {
+	const toggleChatWindow = useCallback(async () => {
 		// handles toggle chat window event
 		if (settings.event?.rcbToggleChatWindow) {
-			const event = callRcbEvent(
+			const event = await callRcbEvent(
 				RcbEvent.TOGGLE_CHAT_WINDOW,
 				{currState: isChatWindowOpen, newState: !isChatWindowOpen}
 			);
@@ -50,18 +50,18 @@ export const useChatWindowInternal = () => {
 			}
 			return !prev;
 		});
-	}, []);
+	}, [isChatWindowOpen]);
 
 	/**
 	 * Handles opening/closing of the chat window.
 	 *
 	 * @param isOpen boolean indicating whether to open/close the chat window
 	 */
-	const openChat = useCallback((isOpen: boolean) => {
+	const openChat = useCallback(async (isOpen: boolean) => {
 		if (isChatWindowOpen === isOpen) {
 			return;
 		}
-		toggleChatWindow();
+		await toggleChatWindow();
 	}, [isChatWindowOpen]);
 
 	return {

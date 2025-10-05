@@ -111,6 +111,6 @@
   "include": [
     "src/**/*",
     "types/*"
-, "__tests__/hooks/internal/useSubmitInputInternal.test.ts"  ],
+  ],
   "exclude": ["node_modules"],
 }
